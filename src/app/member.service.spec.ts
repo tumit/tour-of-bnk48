@@ -19,8 +19,7 @@ describe('MemberService', () => {
 
     beforeEach(() => {
       TestBed.configureTestingModule({
-        imports: [HttpClientModule],
-        providers: [MemberService]
+        imports: [HttpClientModule]
       });
     });
 
