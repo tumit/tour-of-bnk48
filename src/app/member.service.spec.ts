@@ -13,7 +13,7 @@ describe('MemberService', () => {
   });
 
   // ***
-  // *** REAL
+  // *** REAL HTTP
   // ***
   describe('real http', () => {
 
@@ -24,7 +24,7 @@ describe('MemberService', () => {
       });
     });
 
-    fit('should get members: real http', inject([MemberService], (service: MemberService) => {
+    it('should get members: real http', inject([MemberService], (service: MemberService) => {
       service.getMembers().subscribe(members => {
         console.log('real http=', members, members.length);
         expect(members.length).toBeGreaterThan(28);
@@ -34,7 +34,7 @@ describe('MemberService', () => {
   });
 
   // ***
-  // *** MOCK
+  // *** MOCK HTTP
   // ***
   describe('mock http', () => {
 
@@ -44,18 +44,43 @@ describe('MemberService', () => {
       });
     });
 
+    it('should error when 500: Server Error: mock http',
+    inject([MemberService, HttpTestingController]
+      , (service: MemberService, mockHttp: HttpTestingController) => {
+
+        const slug = 'kea';
+        const mockMember = { id: 99, slug: 'kea', first_name: { 'th': 'พัชราพรรณ', 'en': 'Phatcharaphan' } } as Member;
+
+        // 1. call http
+        service.getMember(slug).subscribe(
+          members => {
+            fail('should be error: 500: Server Error');
+          },
+          err => {
+            expect(err.status).toBe(500);
+            expect(err.statusText).toBe('Server Error');
+          }
+        );
+
+        // 2. verify service have called http
+        const mockResponse = mockHttp.expectOne(`${service.MEMBERS_API}/${slug}`);
+
+        // 3. flush mock members to http response
+        // mockResponse.flush(mockMember);
+        mockResponse.flush({ errorMessage: 'Uh oh!'}, { status: 500, statusText: 'Server Error' });
+
+        // 4.  make sure that there are no pending connections.
+        mockHttp.verify();
+
+      }));
+
     it('should call error handle when 500: Server Error: mock http',
       inject([MemberService, HttpTestingController]
         , (service: MemberService, mockHttp: HttpTestingController) => {
 
           spyOn(console, 'log');
 
-          // 1. init mock members
-          const mockMembers = [
-            { id: 99, slag: 'kea', first_name: { 'th': 'พัชราพรรณ', 'en': 'Phatcharaphan' } }
-          ];
-
-          // 2. call http
+          // 1. call http
           service.getMembers().subscribe(
             members => {
               expect(console.log).toHaveBeenCalledWith('err=', 500);
@@ -67,14 +92,14 @@ describe('MemberService', () => {
             }
           );
 
-          // 3. verify service have called http
+          // 2. verify service have called http
           const mockResponse = mockHttp.expectOne(service.MEMBERS_API);
 
-          // 4. flush mock members to http response
+          // 3. flush mock members to http response
           // mockResponse.flush(mockMembers);
           mockResponse.flush({ errorMessage: 'Uh oh!'}, { status: 500, statusText: 'Server Error' });
 
-          // 5.  make sure that there are no pending connections.
+          // 4.  make sure that there are no pending connections.
           mockHttp.verify();
 
         }));
