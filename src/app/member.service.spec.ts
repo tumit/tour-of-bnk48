@@ -1,3 +1,4 @@
+import { Member } from './member';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
 import { HttpClientModule } from '@angular/common/http';
 import { TestBed, inject } from '@angular/core/testing';
@@ -23,10 +24,10 @@ describe('MemberService', () => {
       });
     });
 
-    it('should get members: real http', inject([MemberService], (service: MemberService) => {
+    fit('should get members: real http', inject([MemberService], (service: MemberService) => {
       service.getMembers().subscribe(members => {
-        console.log('real http=', members);
-        expect(members.length).toBeGreaterThan(0);
+        console.log('real http=', members, members.length);
+        expect(members.length).toBeGreaterThan(28);
       });
     }));
 
@@ -47,6 +48,8 @@ describe('MemberService', () => {
       inject([MemberService, HttpTestingController]
         , (service: MemberService, mockHttp: HttpTestingController) => {
 
+          spyOn(console, 'log');
+
           // 1. init mock members
           const mockMembers = [
             { id: 99, slag: 'kea', first_name: { 'th': 'พัชราพรรณ', 'en': 'Phatcharaphan' } }
@@ -55,6 +58,7 @@ describe('MemberService', () => {
           // 2. call http
           service.getMembers().subscribe(
             members => {
+              expect(console.log).toHaveBeenCalledWith('err=', 500);
             },
             err => {
               console.log('err', err);
@@ -64,15 +68,13 @@ describe('MemberService', () => {
           );
 
           // 3. verify service have called http
-          const mockResponse = mockHttp.expectOne(service.api);
+          const mockResponse = mockHttp.expectOne(service.MEMBERS_API);
 
           // 4. flush mock members to http response
           // mockResponse.flush(mockMembers);
           mockResponse.flush({ errorMessage: 'Uh oh!'}, { status: 500, statusText: 'Server Error' });
 
-          // 5. unclear
-          // - make sure that there are no pending connections.
-          // - to verify that no more requests remain to be consumed
+          // 5.  make sure that there are no pending connections.
           mockHttp.verify();
 
         }));
@@ -82,8 +84,8 @@ describe('MemberService', () => {
         , (service: MemberService, mockHttp: HttpTestingController) => {
 
           // 1. init mock members
-          const mockMembers = [
-            { id: 99, slag: 'kea', first_name: { 'th': 'พัชราพรรณ', 'en': 'Phatcharaphan' } }
+          const mockMembers: Member[] = [
+            { id: 99, slug: 'kea', first_name: { 'th': 'พัชราพรรณ', 'en': 'Phatcharaphan' } } as Member
           ];
 
           // 2. call http
@@ -94,10 +96,10 @@ describe('MemberService', () => {
           });
 
           // 3. verify service have called http
-          const mockResponse = mockHttp.expectOne(service.api);
+          const mockResponse = mockHttp.expectOne(service.MEMBERS_API);
 
           // 4. flush mock members to http response
-          mockResponse.flush(mockMembers);
+          mockResponse.flush({ members: mockMembers});
 
           // 5. unclear
           // - make sure that there are no pending connections.
